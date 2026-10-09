@@ -1,7 +1,6 @@
 # Needed to run the server
 mcp==2.3.0
 httpx==0.28.1
-pydantic==2.13.5
 
 # Development only: tests and linting
 pytest==9.1.1
