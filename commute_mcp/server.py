@@ -14,7 +14,7 @@ async def get_weather(latitude: float, longitude: float) -> dict:
         latitude: Latitude in decimal degrees, for example 53.48 for Manchester.
         longitude: Longitude in decimal degrees, for example -2.24 for Manchester.
     """
-    return await get_current_weather(latitude, longitude)
+    return await get_current_weather(latitude, longitude) # The Ai' general knowledge knows coords
 
 
 if __name__ == "__main__":
