@@ -19,3 +19,14 @@ class HourlyForecast:
     precipitation_probability: int
     precipitation_mm: float
     wind_speed_kmh: float
+
+@dataclass
+class Departure:
+    scheduled: str
+    expected: str
+    destination: str
+    platform: str | None
+    operator: str
+    is_cancelled: bool
+    reason: str | None
+    service_id: str
