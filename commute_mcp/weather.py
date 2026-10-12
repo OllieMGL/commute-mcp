@@ -26,7 +26,8 @@ async def get_hourly_forecast(latitude: float, longitude: float) -> list[HourlyF
         "longitude": longitude,
         "hourly": "temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m",
         "timezone": "Europe/London",
-        "forecast_days": 2, # train arriving at midnight covered
+        "forecast_hours": 24,  # covers trains after midnight
+
     }
 
     async with httpx.AsyncClient(timeout=10) as client:
