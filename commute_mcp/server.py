@@ -84,10 +84,10 @@ async def get_departures(station: str, destination: str | None = None, limit: in
 async def plan_journey(origin: str, destination: str, limit: int = 5) -> dict:
     """Plan a train journey and check the weather at the destination.
 
-    Returns the next trains from origin that call at destination, plus
-    the hourly forecast at the destination for the next few hours.
-    Arrival times are not included, so estimate them from the departure
-    times when matching a train to the forecast.
+    Returns the next direct trains from origin that call at destination,
+    each with its scheduled and expected arrival time at the destination,
+    plus the hourly forecast there for the next few hours. Use each
+    train's arrival time to pick the matching forecast hour.
 
     Args:
         origin: The station the user is leaving from, for example "Guildford".
@@ -110,7 +110,7 @@ async def plan_journey(origin: str, destination: str, limit: int = 5) -> dict:
     for hour in forecast:
         hours.append(asdict(hour))
     result["destination_forecast"] = hours
-    
+
     return result
 
 
