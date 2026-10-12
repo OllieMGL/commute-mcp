@@ -1,6 +1,7 @@
 # Needed to run the server
 mcp==2.3.0
 httpx==0.28.1
+python-dotenv==1.2.3
 
 # Development only: tests and linting
 pytest==9.1.1

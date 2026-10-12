@@ -1,7 +1,11 @@
+from dataclasses import asdict
+
 from mcp.server.mcpserver import MCPServer
 
 from commute_mcp.stations import find_stations as search_stations
 from commute_mcp.weather import get_current_weather
+from commute_mcp.rail import get_departure_board
+
 
 mcp = MCPServer("commute-mcp")
 
@@ -37,6 +41,27 @@ def find_stations(query: str, limit: int = 5) -> list[dict]:
     for station in search_stations(query, limit=limit):
         results.append({"name": station["stationName"], "crs": station["crsCode"]})
     return results
+
+@mcp.tool()
+async def get_departures(station: str, limit: int = 10) -> dict:
+    """Get the next trains leaving a UK railway station.
+
+    Args:
+        station: The station name, for example "Guildford" or "London Waterloo".
+        limit: The maximum number of trains to return.
+    """
+    matches = search_stations(station, limit=1)
+    if not matches:
+        return {"error": f"No station found matching '{station}'."}
+
+    match = matches[0]
+    departures = await get_departure_board(match["crsCode"], limit=limit)
+
+    results = []
+    for departure in departures:
+        results.append(asdict(departure))
+    return {"station": match["stationName"], "departures": results}
+
 
 
 
