@@ -89,6 +89,11 @@ async def plan_journey(origin: str, destination: str, limit: int = 5) -> dict:
     plus the hourly forecast there for the next few hours. Use each
     train's arrival time to pick the matching forecast hour.
 
+    For journeys that need a change, call this once per leg (for example
+    Weybridge to Woking, then Woking to Guildford) and choose a second-leg
+    train that leaves after the first train arrives.
+
+
     Args:
         origin: The station the user is leaving from, for example "Guildford".
         destination: The station the user is travelling to, for example "London Waterloo".
