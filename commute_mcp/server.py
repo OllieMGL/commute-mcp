@@ -4,7 +4,7 @@ import httpx
 from mcp.server.mcpserver import MCPServer
 
 from commute_mcp.stations import find_stations as search_stations
-from commute_mcp.weather import get_current_weather
+from commute_mcp.weather import get_current_weather, get_hourly_forecast
 from commute_mcp.rail import MissingApiKeyError, get_departure_board
 
 mcp = MCPServer("commute-mcp")
@@ -60,12 +60,14 @@ async def get_departures(station: str, destination: str | None = None, limit: in
 
     match = matches[0]
 
-    destination_crs = None # means it always exists even if nothing passed in 
+    destination_crs = None # means it always exists even if nothing passed in
+    destination_name = None # tracks the name of station it is matched to 
     if destination:
         destination_matches = search_stations(destination, limit=1)
         if not destination_matches:
             return {"error": f"No station found matching '{destination}'."}
         destination_crs = destination_matches[0]["crsCode"]
+        destination_name = destination_matches[0]["stationName"]
 
     try:
         board = await get_departure_board(match["crsCode"], destination_crs=destination_crs, limit=limit)
@@ -74,7 +76,43 @@ async def get_departures(station: str, destination: str | None = None, limit: in
     except httpx.HTTPError as error:
         return {"error": f"Could not get departures from National Rail: {error}"}
 
-    return asdict(board)
+    result = asdict(board)
+    result["destination"] = destination_name
+    return result
+
+@mcp.tool()
+async def plan_journey(origin: str, destination: str, limit: int = 5) -> dict:
+    """Plan a train journey and check the weather at the destination.
+
+    Returns the next trains from origin that call at destination, plus
+    the hourly forecast at the destination for the next few hours.
+    Arrival times are not included, so estimate them from the departure
+    times when matching a train to the forecast.
+
+    Args:
+        origin: The station the user is leaving from, for example "Guildford".
+        destination: The station the user is travelling to, for example "London Waterloo".
+        limit: The maximum number of trains to return.
+    """
+    result = await get_departures(origin, destination, limit)
+    if "error" in result:
+        return result
+
+    station = search_stations(destination, limit=1)[0]
+    try:
+        forecast = await get_hourly_forecast(float(station["lat"]), float(station["long"]), hours=3)
+    except httpx.HTTPError:
+        result["destination_forecast"] = None
+        result["forecast_error"] = "Could not get the weather forecast."
+        return result
+
+    hours = []
+    for hour in forecast:
+        hours.append(asdict(hour))
+    result["destination_forecast"] = hours
+    
+    return result
+
 
 
 
