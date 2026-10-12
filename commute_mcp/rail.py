@@ -4,12 +4,14 @@ import httpx
 
 from dotenv import load_dotenv
 from commute_mcp.models import Departure, DepartureBoard
+from commute_mcp.cache import TTLCache
 
 
 load_dotenv()
 
 BOARD_URL = "https://api1.raildata.org.uk/1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepBoardWithDetails/{crs}"
 HTML_TAG = re.compile(r"<[^>]+>") # Disruption messages from the API contain HTML links ==> strip tags AI gets plain text.
+DEPARTURES_CACHE = TTLCache(30)  # departures change quickly, so keep them for 30 seconds
 
 class MissingApiKeyError(Exception):
     """Raised when RAIL_API_KEY is not set."""
@@ -23,6 +25,11 @@ async def get_departure_board(
     if not api_key:
         raise MissingApiKeyError("RAIL_API_KEY is not set. Add it to your .env file.")
     
+    key = (crs, destination_crs, limit)
+    cached = DEPARTURES_CACHE.get(key)
+    if cached is not None:
+        return cached
+
     headers = {"x-apikey": api_key}
 
     params = {"numRows": min(limit, 9)} # the with-details board allows at most 9 rows
@@ -36,7 +43,9 @@ async def get_departure_board(
         )
         response.raise_for_status()
 
-        return parse_departure_board(response.json(), destination_crs)
+    board = parse_departure_board(response.json(), destination_crs)
+    DEPARTURES_CACHE.set(key, board)
+    return board
 
 def find_calling_point(service: dict, crs: str | None) -> dict | None:
     for calling_points in service.get("subsequentCallingPoints", []):
