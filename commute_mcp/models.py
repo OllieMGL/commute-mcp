@@ -30,6 +30,8 @@ class Departure:
     is_cancelled: bool
     reason: str | None
     service_id: str
+    arrival_scheduled: str | None = None
+    arrival_expected: str | None = None
 
 @dataclass
 class DepartureBoard:
