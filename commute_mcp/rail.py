@@ -100,14 +100,3 @@ def parse_departure_board(data: dict, destination_crs: str | None = None) -> Dep
         departures=departures,
         messages=messages,
     )
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    board = asyncio.run(get_departure_board("GLD", limit=3))
-    print(board.station)
-    print(board.messages)
-    for departure in board.departures:
-        print(departure)
-

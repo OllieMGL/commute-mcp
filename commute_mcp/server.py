@@ -164,10 +164,3 @@ async def plan_journey(origin: str, destination: str, limit: int = 5) -> dict:
     result["destination_forecast"] = hours
 
     return result
-
-
-
-
-
-if __name__ == "__main__":
-    mcp.run()

@@ -134,11 +134,3 @@ def parse_hourly_forecast(data: dict) -> list[HourlyForecast]:
         )
 
     return forecast
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    forecast = asyncio.run(get_hourly_forecast(51.50, -0.11, hours=3))
-    for hour in forecast:
-        print(hour)

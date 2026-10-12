@@ -36,9 +36,3 @@ def find_stations(query: str, limit: int = 5) -> list[dict]:
     for name in close_names:
         results.append(stations_by_name[name])
     return results
-
-
-
-if __name__ == "__main__":
-    for station in find_stations("waterloo"):
-        print(station["stationName"], station["crsCode"])
