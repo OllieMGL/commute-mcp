@@ -4,7 +4,7 @@ import httpx
 from mcp.server.mcpserver import MCPServer
 
 from commute_mcp.stations import find_stations as search_stations
-from commute_mcp.weather import get_current_weather, get_hourly_forecast
+from commute_mcp.weather import get_current_weather, get_hourly_forecast, hours_until
 from commute_mcp.rail import MissingApiKeyError, get_departure_board
 
 mcp = MCPServer("commute-mcp")
@@ -124,8 +124,8 @@ async def plan_journey(origin: str, destination: str, limit: int = 5) -> dict:
 
     Returns the next direct trains from origin that call at destination,
     each with its scheduled and expected arrival time at the destination,
-    plus the hourly forecast there for the next few hours. Use each
-    train's arrival time to pick the matching forecast hour.
+    plus the hourly forecast there from now until the last train arrives.
+    Use each train's arrival time to pick the matching forecast hour.
 
     For journeys that need a change, call this once per leg (for example
     Weybridge to Woking, then Woking to Guildford) and choose a second-leg
@@ -142,14 +142,24 @@ async def plan_journey(origin: str, destination: str, limit: int = 5) -> dict:
 
     station, _ = resolve_station(destination)  # its note is already in result["notes"]
     try:
-        forecast = await get_hourly_forecast(float(station["lat"]), float(station["long"]), hours=3)
+        forecast = await get_hourly_forecast(float(station["lat"]), float(station["long"]))
     except (httpx.HTTPError, ValueError):
         result["destination_forecast"] = None
         result["forecast_error"] = "Could not get the weather forecast."
         return result
 
+    # Open-Meteo's first hour is the current UK hour, so use it as "now"
+    start_hour = forecast[0].time.hour
+    hours_needed = 1  # always include at least the current hour
+    for departure in result["departures"]:
+        arrival = departure["arrival_expected"]
+        if not arrival or ":" not in arrival:  # "On time", "Delayed" or missing
+            arrival = departure["arrival_scheduled"]
+        if arrival:
+            hours_needed = max(hours_needed, hours_until(start_hour, arrival))
+
     hours = []
-    for hour in forecast:
+    for hour in forecast[:hours_needed]:
         hours.append(asdict(hour))
     result["destination_forecast"] = hours
 

@@ -83,10 +83,12 @@ async def get_hourly_forecast(latitude: float, longitude: float, hours: int = 24
     WEATHER_CACHE.set(key, forecast)
     return forecast
 
-
-
 def describe_weather_code(code: int) -> str:
     return WEATHER_CODES.get(code, "Unknown")
+
+def hours_until(start_hour: int, time: str) -> int:
+    # % 24 wraps past midnight, so 23:00 to 00:20 is 1 hour on, not -23
+    return (int(time[:2]) - start_hour) % 24 + 1
 
 def parse_current_weather(data: dict) -> CurrentWeather:
     current = data.get("current")
