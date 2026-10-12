@@ -1,8 +1,11 @@
 import httpx
 from commute_mcp.models import CurrentWeather, HourlyForecast
 from datetime import datetime
+from commute_mcp.cache import TTLCache
 
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+WEATHER_CACHE = TTLCache(900)  # weather changes slowly, so keep it for 15 minutes
+
 
 WEATHER_CODES = {
     0: "Clear sky",
@@ -37,6 +40,11 @@ WEATHER_CODES = {
 
 async def get_current_weather(latitude: float, longitude: float) -> CurrentWeather:
 
+    key = ("current", latitude, longitude)
+    cached = WEATHER_CACHE.get(key)
+    if cached is not None:
+        return cached
+
     params = {
         "latitude": latitude,
         "longitude": longitude,
@@ -48,8 +56,9 @@ async def get_current_weather(latitude: float, longitude: float) -> CurrentWeath
         response = await client.get(FORECAST_URL, params=params)
         response.raise_for_status()
 
-    return parse_current_weather(response.json())
-
+    weather = parse_current_weather(response.json())
+    WEATHER_CACHE.set(key, weather)
+    return weather
 
 async def get_hourly_forecast(latitude: float, longitude: float, hours: int = 24) -> list[HourlyForecast]:
 
@@ -59,14 +68,21 @@ async def get_hourly_forecast(latitude: float, longitude: float, hours: int = 24
         "hourly": "temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m",
         "timezone": "Europe/London",
         "forecast_hours": hours,
-
     }
+
+    key = ("hourly", latitude, longitude, hours)
+    cached = WEATHER_CACHE.get(key)
+    if cached is not None:
+        return cached
 
     async with httpx.AsyncClient(timeout=10) as client:
         response = await client.get(FORECAST_URL, params=params)
         response.raise_for_status()
 
-    return parse_hourly_forecast(response.json())
+    forecast = parse_hourly_forecast(response.json())
+    WEATHER_CACHE.set(key, forecast)
+    return forecast
+
 
 
 def describe_weather_code(code: int) -> str:
