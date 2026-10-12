@@ -1,14 +1,13 @@
 from dataclasses import asdict
 
+import httpx
 from mcp.server.mcpserver import MCPServer
 
 from commute_mcp.stations import find_stations as search_stations
 from commute_mcp.weather import get_current_weather
-from commute_mcp.rail import get_departure_board
-
+from commute_mcp.rail import MissingApiKeyError, get_departure_board
 
 mcp = MCPServer("commute-mcp")
-
 
 @mcp.tool()
 async def get_weather(station: str) -> dict:
@@ -45,6 +44,7 @@ def find_stations(query: str, limit: int = 5) -> list[dict]:
 @mcp.tool()
 async def get_departures(station: str, destination: str | None = None, limit: int = 10) -> dict:
     """Get the next trains leaving a UK railway station.
+
     Also returns any disruption messages for the station, such as
     engineering works or rail replacement buses.
 
@@ -53,7 +53,8 @@ async def get_departures(station: str, destination: str | None = None, limit: in
         limit: The maximum number of trains to return.
 
         destination: Optional. Only show trains that call at this station,
-        for example "London Waterloo".
+            for example "London Waterloo".
+        limit: The maximum number of trains to return.
     """
     matches = search_stations(station, limit=1)
     if not matches:
@@ -68,7 +69,12 @@ async def get_departures(station: str, destination: str | None = None, limit: in
             return {"error": f"No station found matching '{destination}'."}
         destination_crs = destination_matches[0]["crsCode"]
 
-    board = await get_departure_board(match["crsCode"], destination_crs=destination_crs, limit=limit)
+    try:
+        board = await get_departure_board(match["crsCode"], destination_crs=destination_crs, limit=limit)
+    except MissingApiKeyError as error:
+        return {"error": str(error)}
+    except httpx.HTTPError as error:
+        return {"error": f"Could not get departures from National Rail: {error}"}
 
     return asdict(board)
 
