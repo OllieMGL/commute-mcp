@@ -9,24 +9,52 @@ from commute_mcp.rail import MissingApiKeyError, get_departure_board
 
 mcp = MCPServer("commute-mcp")
 
+def resolve_station(query: str) -> tuple[dict | None, str | None]:
+    """Find the best station for a name, plus a note if the match was a guess."""
+    matches = search_stations(query, limit=5)
+    if not matches:
+        return None, None
+
+    wanted = query.lower().strip()
+    for station in matches:
+        if station["stationName"].lower() == wanted:
+            return station, None  # exact name, no guessing needed
+
+    best = matches[0]
+    if wanted not in best["stationName"].lower():
+        return best, f"No station called '{query}'; using the closest match, {best['stationName']}."
+
+    if len(matches) > 1:
+        others = []
+        for station in matches[1:]:
+            others.append(station["stationName"])
+        return best, f"Assumed {best['stationName']}. Other matches: {', '.join(others)}."
+
+    return best, None
+
 @mcp.tool()
 async def get_weather(station: str) -> dict:
     """Get the current weather at a UK railway station.
 
+    If a station name was ambiguous or misspelt, "notes" says which
+    station was used. Tell the user, so they can correct it if needed.
+
     Args:
         station: The station name, for example "Guildford" or "London Waterloo".
     """
-    matches = search_stations(station, limit=1)
-    if not matches:
+    match, note = resolve_station(station)
+    if match is None:
         return {"error": f"No station found matching '{station}'."}
 
-    match = matches[0]
     try:
         weather = await get_current_weather(float(match["lat"]), float(match["long"]))
     except (httpx.HTTPError, ValueError):
         return {"error": "Could not get the weather from Open-Meteo. Try again shortly."}
 
-    return {"station": match["stationName"], "weather": weather}
+    notes = []
+    if note:
+        notes.append(note)
+    return {"station": match["stationName"], "weather": weather, "notes": notes}
 
 @mcp.tool()
 def find_stations(query: str, limit: int = 5) -> list[dict]:
@@ -51,26 +79,32 @@ async def get_departures(station: str, destination: str | None = None, limit: in
     Also returns any disruption messages for the station, such as
     engineering works or rail replacement buses.
 
+    If a station name was ambiguous or misspelt, "notes" says which
+    station was used. Tell the user, so they can correct it if needed.
+
     Args:
         station: The station name, for example "Guildford" or "London Waterloo".
         destination: Optional. Only show trains that call at this station,
             for example "London Waterloo".
         limit: The maximum number of trains to return.
     """
-    matches = search_stations(station, limit=1)
-    if not matches:
+    notes = []
+    match, note = resolve_station(station)
+    if match is None:
         return {"error": f"No station found matching '{station}'."}
-
-    match = matches[0]
+    if note:
+        notes.append(note)
 
     destination_crs = None # means it always exists even if nothing passed in
-    destination_name = None # tracks the name of station it is matched to 
+    destination_name = None # tracks the name of station it is matched to
     if destination:
-        destination_matches = search_stations(destination, limit=1)
-        if not destination_matches:
+        destination_match, note = resolve_station(destination)
+        if destination_match is None:
             return {"error": f"No station found matching '{destination}'."}
-        destination_crs = destination_matches[0]["crsCode"]
-        destination_name = destination_matches[0]["stationName"]
+        if note:
+            notes.append(note)
+        destination_crs = destination_match["crsCode"]
+        destination_name = destination_match["stationName"]
 
     try:
         board = await get_departure_board(match["crsCode"], destination_crs=destination_crs, limit=limit)
@@ -81,6 +115,7 @@ async def get_departures(station: str, destination: str | None = None, limit: in
 
     result = asdict(board)
     result["destination"] = destination_name
+    result["notes"] = notes
     return result
 
 @mcp.tool()
@@ -105,10 +140,10 @@ async def plan_journey(origin: str, destination: str, limit: int = 5) -> dict:
     if "error" in result:
         return result
 
-    station = search_stations(destination, limit=1)[0]
+    station, _ = resolve_station(destination)  # its note is already in result["notes"]
     try:
         forecast = await get_hourly_forecast(float(station["lat"]), float(station["long"]), hours=3)
-    except httpx.HTTPError:
+    except (httpx.HTTPError, ValueError):
         result["destination_forecast"] = None
         result["forecast_error"] = "Could not get the weather forecast."
         return result
