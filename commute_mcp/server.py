@@ -45,7 +45,9 @@ def find_stations(query: str, limit: int = 5) -> list[dict]:
 @mcp.tool()
 async def get_departures(station: str, limit: int = 10) -> dict:
     """Get the next trains leaving a UK railway station.
-
+    Also returns any disruption messages for the station, such as
+    engineering works or rail replacement buses.
+    
     Args:
         station: The station name, for example "Guildford" or "London Waterloo".
         limit: The maximum number of trains to return.
@@ -55,12 +57,9 @@ async def get_departures(station: str, limit: int = 10) -> dict:
         return {"error": f"No station found matching '{station}'."}
 
     match = matches[0]
-    departures = await get_departure_board(match["crsCode"], limit=limit)
+    board = await get_departure_board(match["crsCode"], limit=limit)
 
-    results = []
-    for departure in departures:
-        results.append(asdict(departure))
-    return {"station": match["stationName"], "departures": results}
+    return asdict(board)
 
 
 

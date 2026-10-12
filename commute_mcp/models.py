@@ -30,3 +30,10 @@ class Departure:
     is_cancelled: bool
     reason: str | None
     service_id: str
+
+@dataclass
+class DepartureBoard:
+    station: str
+    departures: list[Departure]
+    messages: list[str]
+

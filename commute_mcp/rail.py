@@ -1,13 +1,15 @@
 import os
+import re
+import httpx
 
-import httpx 
 from dotenv import load_dotenv
-from commute_mcp.models import Departure
+from commute_mcp.models import Departure, DepartureBoard
 
 
 load_dotenv()
 
 BOARD_URL = "https://api1.raildata.org.uk/1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepartureBoard/{crs}"
+HTML_TAG = re.compile(r"<[^>]+>") # Disruption messages from the API contain HTML links ==> strip tags AI gets plain text.
 
 class MissingApiKeyError(Exception):
     """Raised when RAIL_API_KEY is not set."""
@@ -15,7 +17,7 @@ class MissingApiKeyError(Exception):
 
 async def get_departure_board(
     crs: str, destination_crs: str | None = None, limit: int = 10 # crs is station you are leaving from, destination is optional 
-) -> list[Departure]:
+) -> DepartureBoard:
     
     api_key = os.environ.get("RAIL_API_KEY")
     if not api_key:
@@ -53,18 +55,32 @@ def parse_service(service: dict) -> Departure:
         service_id=service["serviceID"],
     )
 
+def parse_message(message: dict) -> str:
+    return HTML_TAG.sub("", message["Value"]).strip()
 
-def parse_departure_board(data: dict) -> list[Departure]:
+def parse_departure_board(data: dict) -> DepartureBoard:
     services = data.get("trainServices", []) + data.get("busServices", []) # bus services included for rail replacement
     departures = []
     for service in services:
         departures.append(parse_service(service))
-    return departures
+
+    messages = []
+    for message in data.get("nrccMessages", []): # returns an empty list when no disruptions 
+        messages.append(parse_message(message))
+
+    return DepartureBoard(
+        station=data["locationName"],
+        departures=departures,
+        messages=messages,
+    )
 
 
 if __name__ == "__main__":
-    import asyncio  
+    import asyncio
 
-    for departure in asyncio.run(get_departure_board("GLD", limit=3)):
+    board = asyncio.run(get_departure_board("GLD", limit=3))
+    print(board.station)
+    print(board.messages)
+    for departure in board.departures:
         print(departure)
 
