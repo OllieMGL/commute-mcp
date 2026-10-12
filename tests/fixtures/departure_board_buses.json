@@ -1,0 +1,23 @@
+{
+  "locationName": "Guildford",
+  "crs": "GLD",
+  "nrccMessages": [
+    {
+      "Value": "<p>Buses replace trains between Guildford and Woking due to engineering works.</p>"
+    }
+  ],
+  "busServices": [
+    {
+      "std": "10:15",
+      "etd": "On time",
+      "platform": "BUS",
+      "operator": "South Western Railway",
+      "operatorCode": "SW",
+      "isCancelled": false,
+      "serviceType": "bus",
+      "serviceID": "3333333GUILDFD_",
+      "origin": [{ "locationName": "Guildford", "crs": "GLD" }],
+      "destination": [{ "locationName": "Woking", "crs": "WOK" }]
+    }
+  ]
+}

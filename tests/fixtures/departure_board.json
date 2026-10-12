@@ -1,0 +1,57 @@
+{
+  "locationName": "Guildford",
+  "crs": "GLD",
+  "filterLocationName": "London Waterloo",
+  "filtercrs": "WAT",
+  "filterType": "to",
+  "nrccMessages": [
+    {
+      "Value": "Disruption between Woking and London Waterloo. See the <a href=\"https://www.nationalrail.co.uk/\">National Rail</a> website."
+    }
+  ],
+  "trainServices": [
+    {
+      "std": "18:01",
+      "etd": "18:03",
+      "platform": "5",
+      "operator": "South Western Railway",
+      "operatorCode": "SW",
+      "isCancelled": false,
+      "delayReason": "This train has been delayed by a speed restriction",
+      "serviceType": "train",
+      "serviceID": "1111111GUILDFD_",
+      "origin": [{ "locationName": "Portsmouth Harbour", "crs": "PMH" }],
+      "destination": [{ "locationName": "London Waterloo", "crs": "WAT" }],
+      "subsequentCallingPoints": [
+        {
+          "callingPoint": [
+            { "locationName": "Worplesdon", "crs": "WPL", "st": "18:06", "et": "18:08" },
+            { "locationName": "Woking", "crs": "WOK", "st": "18:11", "et": "18:13" },
+            { "locationName": "Clapham Junction", "crs": "CLJ", "st": "18:31", "et": "18:33" },
+            { "locationName": "London Waterloo", "crs": "WAT", "st": "18:41", "et": "18:43" }
+          ]
+        }
+      ]
+    },
+    {
+      "std": "18:34",
+      "etd": "On time",
+      "platform": "1",
+      "operator": "South Western Railway",
+      "operatorCode": "SW",
+      "isCancelled": false,
+      "serviceType": "train",
+      "serviceID": "2222222GUILDFD_",
+      "origin": [{ "locationName": "Guildford", "crs": "GLD" }],
+      "destination": [{ "locationName": "London Waterloo", "crs": "WAT" }],
+      "subsequentCallingPoints": [
+        {
+          "callingPoint": [
+            { "locationName": "Woking", "crs": "WOK", "st": "18:46", "et": "On time" },
+            { "locationName": "London Waterloo", "crs": "WAT", "st": "19:05", "et": "On time" }
+          ]
+        }
+      ]
+    }
+  ]
+}

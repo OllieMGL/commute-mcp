@@ -1,0 +1,13 @@
+{
+  "latitude": 51.5,
+  "longitude": -0.12,
+  "timezone": "Europe/London",
+  "hourly": {
+    "time": ["2026-10-12T18:00", "2026-10-12T19:00", "2026-10-12T20:00"],
+    "temperature_2m": [16.7, 17.0, 15.2],
+    "precipitation_probability": [19, 60, 5],
+    "precipitation": [0.0, 1.2, 0.0],
+    "weather_code": [3, 61, 0],
+    "wind_speed_10m": [11.2, 12.6, 9.8]
+  }
+}
