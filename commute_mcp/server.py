@@ -51,7 +51,6 @@ async def get_departures(station: str, destination: str | None = None, limit: in
     Args:
         station: The station name, for example "Guildford" or "London Waterloo".
         limit: The maximum number of trains to return.
-
         destination: Optional. Only show trains that call at this station,
             for example "London Waterloo".
         limit: The maximum number of trains to return.
