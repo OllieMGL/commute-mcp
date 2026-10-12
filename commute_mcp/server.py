@@ -21,8 +21,11 @@ async def get_weather(station: str) -> dict:
         return {"error": f"No station found matching '{station}'."}
 
     match = matches[0]
-    weather = await get_current_weather(float(match["lat"]), float(match["long"]))
-    
+    try:
+        weather = await get_current_weather(float(match["lat"]), float(match["long"]))
+    except (httpx.HTTPError, ValueError):
+        return {"error": "Could not get the weather from Open-Meteo. Try again shortly."}
+
     return {"station": match["stationName"], "weather": weather}
 
 @mcp.tool()
@@ -92,7 +95,6 @@ async def plan_journey(origin: str, destination: str, limit: int = 5) -> dict:
     For journeys that need a change, call this once per leg (for example
     Weybridge to Woking, then Woking to Guildford) and choose a second-leg
     train that leaves after the first train arrives.
-
 
     Args:
         origin: The station the user is leaving from, for example "Guildford".
